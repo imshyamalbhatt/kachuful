@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#082116">
+<title>Kachuful</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap">
+<style>
+/* Layout: one phone-width column on green felt. Cream "playing card" panels hold each player; gold marks actions and the trump. */
+:root{
+  --felt:#0E3A25; --felt-deep:#082116; --felt-hi:#15502F; --felt-panel:rgba(4,22,13,.45);
+  --gold:#D8B25A; --gold-hi:#F2D68C; --gold-ink:#2E2006; --line:rgba(216,178,90,.30);
+  --card:#F5ECD7; --card-2:#E6D7B5; --ink:#1F1A12; --ink-soft:#6E604A;
+  --red:#B42318; --hit:#1E7A46; --miss:#B42318; --hit-on-felt:#7BD69C; --miss-on-felt:#FF9C8F;
+  --f-display:"Cinzel","Trajan Pro",Georgia,serif;
+  --f-body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
+html{background:var(--felt-deep);padding-top:env(safe-area-inset-top,0px)}
+body{margin:0}
+body{
+  background-color:var(--felt);
+  background-image:radial-gradient(130% 70% at 50% 0%,var(--felt-hi) 0%,var(--felt) 50%,var(--felt-deep) 100%);
+  background-attachment:fixed;
+  color:var(--card); font-family:var(--f-body); font-size:16px; line-height:1.45;
+  min-height:100vh; -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+.wrap{width:100%;max-width:520px;margin-inline:auto;padding-inline:16px}
+.stack{display:flex;flex-direction:column;gap:14px;padding-block:14px 24px}
+.muted{color:color-mix(in srgb,var(--card) 68%,transparent)}
+.small{font-size:13px}
+.label{font-family:var(--f-display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin:0}
+.eyebrow{font-family:var(--f-display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.pos{color:var(--hit-on-felt)} .neg{color:var(--miss-on-felt)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;padding:12px 18px;font-weight:700;border:1.5px solid var(--line);background:transparent;color:var(--card)}
+.btn.primary{background:linear-gradient(180deg,var(--gold-hi),var(--gold));color:var(--gold-ink);border-color:transparent;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.btn.primary:disabled{background:var(--felt-panel);color:color-mix(in srgb,var(--card) 45%,transparent);border-color:var(--line);box-shadow:none}
+.btn.big{width:100%;padding:15px 18px;font-size:17px}
+.btn.ghost{border-style:dashed}
+.btn.danger{color:var(--miss-on-felt);border-color:color-mix(in srgb,var(--miss-on-felt) 45%,transparent)}
+.btn svg,.icon svg{width:18px;height:18px}
+.icon{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:10px;border:0;background:transparent;color:var(--card)}
+.icon.sm{width:34px;height:34px}
+.icon:disabled{opacity:.3}
+
+/* header + dock */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--felt-deep) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;gap:8px;padding-block:6px}
+.bar-title{margin:0;text-align:center;font-family:var(--f-display);font-size:17px;letter-spacing:.06em;color:var(--gold-hi);text-wrap:balance}
+.dock{position:sticky;bottom:0;z-index:5;background:linear-gradient(180deg,transparent,var(--felt-deep) 30%);padding-top:22px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.dock .wrap{display:flex;flex-direction:column;gap:8px}
+.dock-row{display:grid;grid-template-columns:auto 1fr;gap:10px}
+.warn{margin:0;color:var(--gold-hi);text-align:center}
+
+/* segmented tabs */
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--felt-panel);border:1px solid var(--line);border-radius:12px;padding:4px;margin-top:12px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:9px;font-weight:700;color:color-mix(in srgb,var(--card) 70%,transparent)}
+.seg button.on{background:var(--card);color:var(--ink)}
+
+/* home */
+.home{display:flex;flex-direction:column;align-items:center;gap:18px;padding-block:28px 32px}
+.logo{width:min(72vw,280px);height:auto;aspect-ratio:1;max-width:100%;border-radius:19%;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.resume{width:100%;text-align:left;display:grid;gap:2px;padding:14px 16px;border-radius:14px;background:var(--card);color:var(--ink);border:0}
+.resume strong{font-size:18px}
+.resume .muted{color:var(--ink-soft);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.resume .go{font-weight:800;color:var(--hit);margin-top:4px}
+.resume .eyebrow{color:var(--ink-soft)}
+.legend{width:100%;display:grid;gap:10px;margin-top:6px}
+.legend-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mini{background:var(--card);color:var(--ink);border-radius:10px;padding:10px 4px 8px;display:grid;justify-items:center;gap:0;box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.mini.red{color:var(--red)}
+.mini-s{font-size:28px;line-height:1}
+.mini-k{font-family:var(--f-display);font-weight:700;font-size:14px;margin-top:4px}
+.mini-e{font-size:11px;color:var(--ink-soft)}
+.legend p{margin:0;text-align:center}
+
+/* setup */
+.panel{background:var(--felt-panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:12px}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.plist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pitem{display:grid;grid-template-columns:24px 1fr auto auto auto;align-items:center;gap:4px}
+.pnum{font-family:var(--f-display);color:var(--gold);text-align:center;font-variant-numeric:tabular-nums}
+.pinput{min-width:0;width:100%;font:inherit;font-weight:600;padding:10px 12px;border-radius:10px;border:1.5px solid transparent;background:var(--card);color:var(--ink)}
+.pinput::placeholder{color:var(--ink-soft);font-weight:400}
+.pinput:focus{outline:none;border-color:var(--gold)}
+.stepper{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.step{display:flex;align-items:center;gap:6px;background:var(--card);color:var(--ink);border-radius:12px;padding:3px}
+.step .icon{color:var(--ink);font-size:20px;font-weight:700}
+.step b{min-width:28px;text-align:center;font-size:18px;font-variant-numeric:tabular-nums}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opt{display:grid;gap:2px;text-align:left;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:transparent}
+.opt b{font-size:15px}
+.opt span{font-size:13px;color:color-mix(in srgb,var(--card) 65%,transparent);font-variant-numeric:tabular-nums}
+.opt.on{background:var(--card);color:var(--ink);border-color:var(--card)}
+.opt.on span{color:var(--ink-soft)}
+.sub{font-weight:700;font-size:14px;margin-bottom:-4px}
+.example{margin:0;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,.2);font-size:14px}
+.rounds-list{margin:0;font-variant-numeric:tabular-nums;word-break:break-word}
+.toggle{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;cursor:pointer}
+.toggle input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--gold)}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{min-width:44px;height:44px;padding:0 10px;border-radius:11px;border:1.5px solid var(--line);background:transparent;font-weight:800;font-size:17px;font-variant-numeric:tabular-nums}
+.chip.wide{font-size:15px;font-weight:700;height:40px}
+.chip.on{background:var(--card);color:var(--ink);border-color:var(--card)}
+.prow .chip{border-color:var(--card-2);color:var(--ink);background:#FBF6EA}
+.prow .chip.on{background:var(--felt);color:var(--gold-hi);border-color:var(--felt)}
+.prow .chip.no{opacity:.35;text-decoration:line-through;background:transparent}
+
+/* round */
+.table-info{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.trump{width:84px;height:112px;border-radius:12px;background:var(--card);color:var(--ink);display:grid;place-items:center;align-content:center;gap:2px;box-shadow:0 6px 0 rgba(0,0,0,.25),0 0 0 3px var(--gold) inset}
+.trump.red{color:var(--red)}
+.t-s{font-size:44px;line-height:1}
+.t-k{font-family:var(--f-display);font-weight:700;font-size:15px}
+.t-e{font-size:11px;color:var(--ink-soft);margin-top:-2px}
+.facts{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.facts div{min-width:0}
+.facts dt{font-family:var(--f-display);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.facts dd{margin:0;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.facts dd small{font-size:14px;font-weight:600;color:color-mix(in srgb,var(--card) 65%,transparent)}
+.facts .wide{grid-column:1 / -1}
+.edit-banner{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px dashed var(--gold);color:var(--gold-hi);font-weight:700}
+.phase-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.phase-head h2{margin:0;font-family:var(--f-display);font-size:20px;color:var(--gold-hi)}
+.meter{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:rgba(0,0,0,.25);font-weight:700;font-variant-numeric:tabular-nums}
+.meter .state{font-size:14px}
+.meter .state.ok{color:var(--hit-on-felt)} .meter .state.bad{color:var(--miss-on-felt)} .meter .state.wait{color:var(--gold-hi)}
+.prows{display:grid;gap:10px}
+.prow{background:var(--card);color:var(--ink);border-radius:14px;padding:12px;display:grid;gap:10px;box-shadow:0 3px 0 rgba(0,0,0,.22)}
+.prow.is-dealer{box-shadow:0 3px 0 rgba(0,0,0,.22),0 0 0 2px var(--gold) inset}
+.prow-head{display:flex;align-items:center;gap:8px;min-width:0}
+.seat{font-family:var(--f-display);font-weight:700;color:var(--ink-soft);font-size:13px;width:18px;text-align:center}
+.pname{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tag{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--felt);color:var(--gold-hi);flex:none}
+.tag.bid{background:var(--card-2);color:var(--ink)}
+.head-end{margin-left:auto;font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums;flex:none;font-weight:700}
+.badge{margin-left:auto;font-weight:800;font-size:15px;padding:2px 9px;border-radius:999px;flex:none;font-variant-numeric:tabular-nums}
+.badge.hit{background:color-mix(in srgb,var(--hit) 16%,transparent);color:var(--hit)}
+.badge.miss{background:color-mix(in srgb,var(--miss) 14%,transparent);color:var(--miss)}
+.note{margin:-4px 0 0;font-size:13px;color:var(--ink-soft)}
+
+/* scores */
+.board{display:grid;gap:8px}
+.lb{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:var(--felt-panel);border:1px solid var(--line)}
+.lb.first{background:var(--card);color:var(--ink);border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+.lb .rk{font-family:var(--f-display);font-weight:700;font-size:18px;color:var(--gold);text-align:center}
+.lb.first .rk{color:var(--gold-ink)}
+.lb .nm{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.lb .meta{display:block;font-weight:600;font-size:12px;color:color-mix(in srgb,currentColor 65%,transparent)}
+.lb .tt{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.sheet{overflow-x:auto;border-radius:14px;background:var(--card);color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.22)}
+.sheet table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.sheet th,.sheet td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--card-2);white-space:nowrap}
+.sheet thead th{font-size:13px;font-weight:800;max-width:84px;overflow:hidden;text-overflow:ellipsis;background:var(--card-2)}
+.sheet th:first-child,.sheet td:first-child{position:sticky;left:0;background:var(--card);text-align:left;padding-left:10px;z-index:1;border-right:1px solid var(--card-2)}
+.sheet thead th:first-child{background:var(--card-2)}
+.rbtn{display:flex;align-items:center;gap:6px;border:0;background:transparent;padding:0;font-weight:700;color:var(--ink)}
+.rbtn svg{width:14px;height:14px;color:var(--ink-soft)}
+.rbtn .r{color:var(--ink-soft);font-size:12px;min-width:20px}
+.suit.red{color:var(--red)}
+.cell-pts{display:block;font-weight:800;font-size:15px}
+.cell-pts.hit{color:var(--hit)} .cell-pts.miss{color:var(--miss)}
+.cell-sub{display:block;font-size:11px;color:var(--ink-soft)}
+tr.pending td{color:var(--ink-soft)}
+tr.pending .rbtn{color:var(--ink-soft);cursor:default}
+tr.now td{background:color-mix(in srgb,var(--gold) 18%,var(--card))}
+tfoot td{font-weight:800;font-size:16px;background:var(--card-2);border-bottom:0}
+.sheet tfoot td:first-child{background:var(--card-2)}
+.hint{margin:0;text-align:center}
+
+/* end */
+.end{display:flex;flex-direction:column;align-items:center;gap:6px;padding-block:24px 32px;text-align:center}
+.end .logo{width:120px;margin-bottom:10px}
+.winner{margin:0;font-family:var(--f-display);font-size:clamp(30px,9vw,44px);color:var(--gold-hi);text-wrap:balance;line-height:1.1;overflow-wrap:anywhere}
+.win-pts{margin:0 0 14px;font-size:18px;font-weight:700}
+.end .board{width:100%;text-align:left}
+.end .actions{width:100%;display:grid;gap:10px;margin-top:16px}
+
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--card);color:var(--ink);padding:10px 16px;border-radius:999px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:20;max-width:calc(100% - 32px);text-align:center}
+@media (prefers-reduced-motion:no-preference){
+  .prow .chip{transition:background .12s,color .12s,transform .08s}
+  .prow .chip:active:not(:disabled){transform:scale(.94)}
+}
+</style>
+</head>
+<body>
+<div id="app" data-app="kachuful"></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script>
+const SUITS=[
+  {k:'Kali',en:'Spades',s:'♠',red:false},
+  {k:'Chukat',en:'Diamonds',s:'♦',red:true},
+  {k:'Fuli',en:'Clubs',s:'♣',red:false},
+  {k:'Laal',en:'Hearts',s:'♥',red:true},
+];
+const HIT={
+  'ten-plus':{label:'10 + bid',fn:b=>10+b},
+  'times-ten':{label:'Bid × 10',fn:b=>b===0?10:b*10},
+  'flat':{label:'Flat 10',fn:()=>10},
+};
+const MISS={
+  'zero':{label:'0',fn:()=>0},
+  'minus-ten':{label:'−10',fn:()=>-10},
+  'mirror':{label:'Minus the same',fn:(b,hit)=>-hit(b)},
+};
+const PATTERNS=[
+  {id:'down',label:'Count down',ex:m=>`${m} → 1`},
+  {id:'up',label:'Count up',ex:m=>`1 → ${m}`},
+  {id:'downup',label:'Down, then up',ex:m=>`${m} → 1 → ${m}`},
+  {id:'updown',label:'Up, then down',ex:m=>`1 → ${m} → 1`},
+];
+const I={
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+};
+const KEY='kachuful.v1';
+
+function defaultSetup(){return{players:['','','',''],maxCards:8,pattern:'down',hit:'ten-plus',miss:'minus-ten',dealerRule:true,firstDealer:0}}
+function load(){
+  try{const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.setup) return {screen:'home',setup:s.setup,game:s.game||null,ui:{}};}catch(e){}
+  return null;
+}
+let state=load()||{screen:'home',setup:defaultSetup(),game:null,ui:{}};
+function save(){try{localStorage.setItem(KEY,JSON.stringify({setup:state.setup,game:state.game}))}catch(e){}}
+
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=v=>v>0?'+'+v:v<0?'−'+Math.abs(v):'0';
+const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+const names=s=>s.players.map((p,i)=>p.trim()||`Player ${i+1}`);
+const capFor=n=>Math.floor(52/n);
+
+function buildRounds(m,p){
+  const down=range(1,m).reverse(), up=range(1,m);
+  if(p==='up') return up;
+  if(p==='downup') return down.concat(up.slice(1));
+  if(p==='updown') return up.concat(down.slice(1));
+  return down;
+}
+function scoreOf(cfg,b,t){const hit=HIT[cfg.hit].fn; return b===t?hit(b):MISS[cfg.miss].fn(b,hit)}
+function newDraft(n){return{bids:Array(n).fill(null),tricks:Array(n).fill(null),phase:'bid'}}
+function target(g){return g.editIdx!=null?g.editIdx:g.cur}
+function draftOf(g){return g.editIdx!=null?g.editDraft:g.draft}
+function order(g,r){const n=g.players.length; return range(1,n).map(k=>(r.dealer+k)%n)}
+function forbidden(g,r,d){
+  if(!g.config.dealerRule) return null;
+  const others=order(g,r).filter(p=>p!==r.dealer);
+  if(others.some(p=>d.bids[p]==null)) return null;
+  const f=r.cards-others.reduce((a,p)=>a+d.bids[p],0);
+  return f>=0&&f<=r.cards?f:null;
+}
+function totals(g){
+  const n=g.players.length, tot=Array(n).fill(0), hits=Array(n).fill(0); let played=0;
+  g.entries.forEach(e=>{ if(!e) return; played++;
+    for(let p=0;p<n;p++){ tot[p]+=scoreOf(g.config,e.bids[p],e.tricks[p]); if(e.bids[p]===e.tricks[p]) hits[p]++; } });
+  return {tot,hits,played};
+}
+function ranking(g){
+  const {tot,hits,played}=totals(g);
+  const list=g.players.map((name,p)=>({p,name,total:tot[p],hits})).map(x=>({...x,hits:hits[x.p]})).sort((a,b)=>b.total-a.total||b.hits-a.hits);
+  list.forEach((x,i)=>{x.rank=i>0&&list[i-1].total===x.total?list[i-1].rank:i+1});
+  return {list,played};
+}
+
+function startGame(){
+  const s=state.setup, players=names(s), n=players.length;
+  s.maxCards=Math.min(s.maxCards,capFor(n));
+  const rounds=buildRounds(s.maxCards,s.pattern).map((c,i)=>({cards:c,trump:i%4,dealer:(s.firstDealer+i)%n}));
+  state.game={players,config:{hit:s.hit,miss:s.miss,dealerRule:s.dealerRule},rounds,entries:rounds.map(()=>null),
+    cur:0,draft:newDraft(n),editIdx:null,editDraft:null,view:'round',finished:false,started:Date.now()};
+  go('game');
+}
+function go(screen){state.screen=screen; state.ui={}; render(true)}
+
+/* ---------- views ---------- */
+function viewHome(){
+  const g=state.game;
+  const resume=g&&!g.finished?`<button class="resume" data-act="resume">
+      <span class="eyebrow">Game in progress</span>
+      <strong>Round ${g.cur+1} of ${g.rounds.length}</strong>
+      <span class="muted">${esc(g.players.join(', '))}</span>
+      <span class="go">Resume game</span></button>`:'';
+  return `<main class="wrap home">
+    <img class="logo" src="kachuful-logo.png" alt="Kachuful, Judgement card game" width="512" height="512">
+    ${resume}
+    <button class="btn ${g&&!g.finished?'':'primary'} big" data-act="new">New game</button>
+    <section class="legend" aria-label="Trump order">
+      <h2 class="label" style="text-align:center">Trump order</h2>
+      <div class="legend-row">${SUITS.map(s=>`<div class="mini ${s.red?'red':''}"><span class="mini-s">${s.s}</span><span class="mini-k">${s.k}</span><span class="mini-e">${s.en}</span></div>`).join('')}</div>
+      <p class="muted small">Ka, Chu, Fu, L. Trump moves one suit along every round.</p>
+    </section>
+  </main>`;
+}
+
+function viewSetup(){
+  const s=state.setup, n=s.players.length, cap=capFor(n);
+  if(s.maxCards>cap) s.maxCards=cap;
+  if(s.firstDealer>=n) s.firstDealer=0;
+  const rounds=buildRounds(s.maxCards,s.pattern), nm=names(s), hit=HIT[s.hit].fn, miss=b=>MISS[s.miss].fn(b,hit);
+  const replacing=state.game&&!state.game.finished;
+  return `${bar('New game')}
+  <main class="wrap stack">
+    <section class="panel">
+      <div class="panel-head"><h2 class="label">Players</h2><span class="muted small">In seating order, clockwise</span></div>
+      <ol class="plist">${s.players.map((p,i)=>`<li class="pitem">
+        <span class="pnum">${i+1}</span>
+        <input id="pname-${i}" class="pinput" data-name="${i}" value="${esc(p)}" placeholder="Player ${i+1}" maxlength="16" autocomplete="off" enterkeyhint="next" aria-label="Player ${i+1} name">
+        <button class="icon sm" data-act="mv" data-i="${i}" data-d="-1" ${i===0?'disabled':''} aria-label="Move up">${I.up}</button>
+        <button class="icon sm" data-act="mv" data-i="${i}" data-d="1" ${i===n-1?'disabled':''} aria-label="Move down">${I.down}</button>
+        <button class="icon sm" data-act="rm" data-i="${i}" ${n<=3?'disabled':''} aria-label="Remove player">${I.x}</button>
+      </li>`).join('')}</ol>
+      ${n<10?`<button class="btn ghost" data-act="add">${I.plus} Add player</button>`:''}
+    </section>
+
+    <section class="panel">
+      <h2 class="label">Who deals first</h2>
+      <div class="chips">${nm.map((x,i)=>`<button class="chip wide ${s.firstDealer===i?'on':''}" data-act="dealer0" data-i="${i}">${esc(x)}</button>`).join('')}</div>
+      <p class="muted small" style="margin:0">The deal then passes clockwise each round.</p>
+    </section>
+
+    <section class="panel">
+      <h2 class="label">Rounds</h2>
+      <div class="stepper"><span>Most cards in a hand</span>
+        <div class="step">
+          <button class="icon sm" data-act="max" data-d="-1" ${s.maxCards<=1?'disabled':''} aria-label="Fewer cards">−</button>
+          <b>${s.maxCards}</b>
+          <button class="icon sm" data-act="max" data-d="1" ${s.maxCards>=cap?'disabled':''} aria-label="More cards">+</button>
+        </div></div>
+      <div class="opts">${PATTERNS.map(p=>`<button class="opt ${s.pattern===p.id?'on':''}" data-act="pattern" data-v="${p.id}"><b>${p.label}</b><span>${p.ex(s.maxCards)}</span></button>`).join('')}</div>
+      <p class="muted small rounds-list">${rounds.length} rounds: ${rounds.join(', ')}. With ${n} players you can deal up to ${cap} each.</p>
+    </section>
+
+    <section class="panel">
+      <h2 class="label">Scoring</h2>
+      <div class="sub">Made the bid exactly</div>
+      <div class="chips">${Object.entries(HIT).map(([k,v])=>`<button class="chip wide ${s.hit===k?'on':''}" data-act="hit" data-v="${k}">${v.label}</button>`).join('')}</div>
+      <div class="sub">Missed the bid</div>
+      <div class="chips">${Object.entries(MISS).map(([k,v])=>`<button class="chip wide ${s.miss===k?'on':''}" data-act="miss" data-v="${k}">${v.label}</button>`).join('')}</div>
+      <p class="example">Bid 3, won 3: <b class="pos">${fmt(hit(3))}</b><br>Bid 3, won 2: <b class="${miss(3)<0?'neg':''}">${fmt(miss(3))}</b><br>Bid 0, won 0: <b class="pos">${fmt(hit(0))}</b></p>
+      <label class="toggle"><input type="checkbox" id="dealer-rule" data-act="rule" ${s.dealerRule?'checked':''}>
+        <span><b>Dealer restriction</b><br><span class="muted small">The dealer bids last and can't pick the number that makes total bids equal the cards dealt.</span></span></label>
+    </section>
+  </main>
+  <footer class="dock"><div class="wrap">
+    ${replacing?'<p class="warn small">Starting a new game replaces the one in progress.</p>':''}
+    <button class="btn primary big" data-act="start">Start game, ${rounds.length} rounds</button>
+  </div></footer>`;
+}
+
+function bar(title,right=''){
+  return `<header class="bar"><div class="wrap"><button class="icon" data-act="home" aria-label="Home">${I.home}</button><h1 class="bar-title">${title}</h1><span>${right}</span></div></header>`;
+}
+
+function viewGame(){
+  const g=state.game, editing=g.editIdx!=null;
+  const showRound=g.view==='round'&&(!g.finished||editing);
+  const title=g.finished&&!editing?'Final scores':`Round ${target(g)+1} of ${g.rounds.length}`;
+  const tabs=(!g.finished||editing)?`<div class="seg" role="tablist">
+      <button role="tab" aria-selected="${showRound}" class="${showRound?'on':''}" data-act="view" data-v="round">${editing?'Editing round '+(g.editIdx+1):'This round'}</button>
+      <button role="tab" aria-selected="${!showRound}" class="${!showRound?'on':''}" data-act="view" data-v="scores">Scoreboard</button></div>`:'';
+  return bar(title)+`<div class="wrap">${tabs}</div>`+(showRound?viewRound(g):viewScores(g));
+}
+
+function viewRound(g){
+  const t=target(g), r=g.rounds[t], d=draftOf(g), s=SUITS[r.trump], ord=order(g,r), editing=g.editIdx!=null;
+  const {tot}=totals(g);
+  const info=`<section class="table-info">
+      <div class="trump ${s.red?'red':''}" aria-label="Trump is ${s.k}, ${s.en}"><span class="t-s">${s.s}</span><span class="t-k">${s.k}</span><span class="t-e">Trump</span></div>
+      <dl class="facts">
+        <div><dt>Deal</dt><dd>${r.cards}<small> card${r.cards>1?'s':''}</small></dd></div>
+        <div><dt>Round</dt><dd>${t+1}<small> of ${g.rounds.length}</small></dd></div>
+        <div class="wide"><dt>Dealer</dt><dd>${esc(g.players[r.dealer])}</dd></div>
+      </dl></section>`;
+  const banner=editing?`<div class="edit-banner"><span>Fixing round ${t+1}. Totals update when you save.</span><button class="btn" data-act="cancel-edit">Cancel</button></div>`:'';
+  let body, dock;
+  if(d.phase==='bid'){
+    const f=forbidden(g,r,d), sum=ord.reduce((a,p)=>a+(d.bids[p]??0),0), left=ord.filter(p=>d.bids[p]==null).length;
+    const st=left?`<span class="state wait">${left} still to bid</span>`:sum>r.cards?`<span class="state ok">Over by ${sum-r.cards}</span>`:sum<r.cards?`<span class="state ok">Under by ${r.cards-sum}</span>`:`<span class="state bad">Equals the tricks</span>`;
+    body=`<div class="phase-head"><h2>Bids</h2><span class="muted small">Left of the dealer bids first. Dealer bids last.</span></div>
+      <div class="meter"><span>Total bids ${sum} for ${r.cards} trick${r.cards>1?'s':''}</span>${st}</div>
+      <div class="prows">${ord.map((p,k)=>`<article class="prow ${p===r.dealer?'is-dealer':''}">
+        <div class="prow-head"><span class="seat">${k+1}</span><strong class="pname">${esc(g.players[p])}</strong>${p===r.dealer?'<span class="tag">Dealer</span>':''}<span class="head-end">${fmt(tot[p]).replace('+','')} pts</span></div>
+        <div class="chips" role="group" aria-label="${esc(g.players[p])} bid">${range(0,r.cards).map(v=>{const no=p===r.dealer&&f===v;
+          return `<button class="chip ${d.bids[p]===v?'on':''} ${no?'no':''}" data-act="bid" data-p="${p}" data-v="${v}" ${no?`disabled aria-label="${v}, not allowed for the dealer"`:''} aria-pressed="${d.bids[p]===v}">${v}</button>`}).join('')}</div>
+        ${p===r.dealer&&f!=null?`<p class="note">The dealer can't bid ${f}, because total bids would equal ${r.cards}.</p>`:''}
+      </article>`).join('')}</div>`;
+    dock=`<button class="btn primary big" data-act="to-tricks" ${left?'disabled':''}>${left?'Waiting for every bid':'Bids done, start playing'}</button>`;
+  }else{
+    const sum=ord.reduce((a,p)=>a+(d.tricks[p]??0),0), left=ord.filter(p=>d.tricks[p]==null).length, rem=r.cards-sum;
+    const st=sum>r.cards?`<span class="state bad">${sum-r.cards} too many</span>`:left?`<span class="state wait">${left} player${left>1?'s':''} left${rem>=0?`, ${rem} trick${rem===1?'':'s'} to go`:''}</span>`:sum<r.cards?`<span class="state bad">${rem} trick${rem>1?'s':''} missing</span>`:`<span class="state ok">All tricks counted</span>`;
+    const ok=!left&&sum===r.cards;
+    body=`<div class="phase-head"><h2>Tricks won</h2><span class="muted small">Tap how many hands each player took.</span></div>
+      <div class="meter"><span>Counted ${sum} of ${r.cards}</span>${st}</div>
+      <div class="prows">${ord.map((p,k)=>{const tr=d.tricks[p], b=d.bids[p], pts=tr==null?null:scoreOf(g.config,b,tr);
+        return `<article class="prow ${p===r.dealer?'is-dealer':''}">
+        <div class="prow-head"><span class="seat">${k+1}</span><strong class="pname">${esc(g.players[p])}</strong><span class="tag bid">Bid ${b}</span>
+          ${pts==null?'':`<span class="badge ${b===tr?'hit':'miss'}">${fmt(pts)}</span>`}</div>
+        <div class="chips" role="group" aria-label="${esc(g.players[p])} tricks won">${range(0,r.cards).map(v=>`<button class="chip ${tr===v?'on':''}" data-act="trick" data-p="${p}" data-v="${v}" aria-pressed="${tr===v}">${v}</button>`).join('')}</div>
+      </article>`}).join('')}</div>`;
+    dock=`<div class="dock-row"><button class="btn" data-act="to-bids">Edit bids</button><button class="btn primary" data-act="save-round" ${ok?'':'disabled'}>${editing?'Save changes':t===g.rounds.length-1?'Save and finish':'Save round'}</button></div>`;
+  }
+  return `<main class="wrap stack">${banner}${info}${body}</main><footer class="dock"><div class="wrap">${dock}</div></footer>`;
+}
+
+function viewScores(g){
+  const {list,played}=ranking(g), {tot}=totals(g), n=g.players.length;
+  const lb=`<section class="board" aria-label="Leaderboard">${list.map((x,i)=>`<div class="lb ${x.rank===1&&played?'first':''}"><span class="rk">${x.rank}</span><span class="nm">${esc(x.name)}<span class="meta">Made ${x.hits} of ${played} bid${played===1?'':'s'}</span></span><span class="tt">${fmt(x.total).replace('+','')}</span></div>`).join('')}</section>`;
+  const rows=g.rounds.map((r,i)=>{const e=g.entries[i], s=SUITS[r.trump], now=!g.finished&&i===g.cur;
+    const label=`<span class="r">R${i+1}</span>${r.cards}<span class="suit ${s.red?'red':''}">${s.s}</span>`;
+    const first=e?`<button class="rbtn" data-act="edit" data-i="${i}" aria-label="Edit round ${i+1}">${label}${I.pen}</button>`:`<span class="rbtn">${label}</span>`;
+    const cells=g.players.map((_,p)=>{ if(!e) return `<td>${now&&g.draft.bids[p]!=null?`<span class="cell-sub">bid ${g.draft.bids[p]}</span>`:''}</td>`;
+      const pts=scoreOf(g.config,e.bids[p],e.tricks[p]), hit=e.bids[p]===e.tricks[p];
+      return `<td><span class="cell-pts ${hit?'hit':'miss'}">${fmt(pts)}</span><span class="cell-sub">${e.bids[p]} / ${e.tricks[p]}</span></td>`}).join('');
+    return `<tr class="${e?'':'pending'} ${now?'now':''}"><td>${first}</td>${cells}</tr>`}).join('');
+  const table=`<div class="sheet"><table>
+    <thead><tr><th>Round</th>${g.players.map(x=>`<th title="${esc(x)}">${esc(x)}</th>`).join('')}</tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td>Total</td>${tot.map(v=>`<td>${fmt(v).replace('+','')}</td>`).join('')}</tr></tfoot></table></div>
+    <p class="muted small hint">Each cell shows points, then bid / won. Tap a played round to fix it.</p>`;
+  const endBtn=g.finished?'':`<button class="btn danger" data-act="end-game">${state.ui.confirmEnd?'Tap again to end the game now':'End game early'}</button>`;
+  const dock=g.finished?`<button class="btn primary big" data-act="result">See the winner</button>`:`<button class="btn primary big" data-act="view" data-v="round">Back to round ${g.cur+1}</button>`;
+  return `<main class="wrap stack">${lb}${table}${endBtn}</main><footer class="dock"><div class="wrap">${dock}</div></footer>`;
+}
+
+function viewEnd(){
+  const g=state.game, {list,played}=ranking(g);
+  const top=list.filter(x=>x.rank===1);
+  return `<main class="wrap end">
+    <img class="logo" src="kachuful-logo.png" alt="Kachuful" width="512" height="512">
+    <span class="eyebrow">${top.length>1?'Tied for the win':'Winner'}</span>
+    <h1 class="winner">${top.map(x=>esc(x.name)).join(' & ')}</h1>
+    <p class="win-pts">${top[0].total} points after ${played} round${played===1?'':'s'}</p>
+    <section class="board">${list.map(x=>`<div class="lb ${x.rank===1?'first':''}"><span class="rk">${x.rank}</span><span class="nm">${esc(x.name)}<span class="meta">Made ${x.hits} of ${played} bids</span></span><span class="tt">${fmt(x.total).replace('+','')}</span></div>`).join('')}</section>
+    <div class="actions">
+      <button class="btn primary big" data-act="copy">Copy results for WhatsApp</button>
+      <button class="btn" data-act="scores">View full scoreboard</button>
+      <button class="btn" data-act="rematch">Rematch with same players</button>
+      <button class="btn" data-act="new">New game</button>
+    </div>
+  </main>`;
+}
+
+/* ---------- render + events ---------- */
+const app=document.getElementById('app');
+function render(top){
+  const v=state.screen==='setup'?viewSetup():state.screen==='game'&&state.game?viewGame():state.screen==='end'&&state.game?viewEnd():viewHome();
+  app.innerHTML=v;
+  if(top) window.scrollTo(0,0);
+}
+let toastT;
+function toast(msg){const t=document.getElementById('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2200)}
+function resultsText(){
+  const g=state.game, {list,played}=ranking(g);
+  return `Kachuful results (${played} round${played===1?'':'s'})\n`+list.map(x=>`${x.rank}. ${x.name}: ${x.total} pts (made ${x.hits}/${played})`).join('\n');
+}
+
+app.addEventListener('input',e=>{
+  const i=e.target.dataset.name; if(i==null) return;
+  state.setup.players[+i]=e.target.value; save();
+  const chip=app.querySelector(`[data-act="dealer0"][data-i="${i}"]`); if(chip) chip.textContent=e.target.value.trim()||`Player ${+i+1}`;
+});
+app.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||e.target.dataset.name==null) return;
+  const next=document.getElementById('pname-'+(+e.target.dataset.name+1)); if(next) next.focus(); else e.target.blur();
+});
+
+app.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]'); if(!el||el.disabled) return;
+  const a=el.dataset.act, s=state.setup, g=state.game, i=+el.dataset.i, v=el.dataset.v;
+  let top=false;
+  if(a!=='end-game') state.ui.confirmEnd=false;
+  switch(a){
+    case 'home': go('home'); return;
+    case 'new': go('setup'); return;
+    case 'resume': g.view='round'; go('game'); return;
+    case 'add': s.players.push(''); break;
+    case 'rm': s.players.splice(i,1); if(s.firstDealer>=s.players.length) s.firstDealer=0; break;
+    case 'mv': {const j=i+(+el.dataset.d); [s.players[i],s.players[j]]=[s.players[j],s.players[i]];
+      if(s.firstDealer===i) s.firstDealer=j; else if(s.firstDealer===j) s.firstDealer=i; break;}
+    case 'dealer0': s.firstDealer=i; break;
+    case 'max': s.maxCards=Math.max(1,Math.min(capFor(s.players.length),s.maxCards+(+el.dataset.d))); break;
+    case 'pattern': s.pattern=v; break;
+    case 'hit': s.hit=v; break;
+    case 'miss': s.miss=v; break;
+    case 'rule': s.dealerRule=el.checked; break;
+    case 'start': startGame(); save(); return;
+    case 'view': g.view=v; top=true; break;
+    case 'bid': case 'trick': {
+      const d=draftOf(g), r=g.rounds[target(g)], p=+el.dataset.p, val=+v, key=a==='bid'?'bids':'tricks';
+      d[key][p]=d[key][p]===val?null:val;
+      if(a==='bid'){const f=forbidden(g,r,d); if(f!=null&&d.bids[r.dealer]===f) d.bids[r.dealer]=null;}
+      break;}
+    case 'to-tricks': draftOf(g).phase='tricks'; top=true; break;
+    case 'to-bids': draftOf(g).phase='bid'; top=true; break;
+    case 'save-round': {
+      const t=target(g), d=draftOf(g);
+      g.entries[t]={bids:d.bids.slice(),tricks:d.tricks.slice()};
+      if(g.editIdx!=null){g.editIdx=null; g.editDraft=null; g.view='scores'; toast(`Round ${t+1} updated`);}
+      else{
+        g.cur++; g.draft=newDraft(g.players.length);
+        if(g.cur>=g.rounds.length){g.finished=true; save(); go('end'); return;}
+        toast(`Round ${t+1} saved`);
+      }
+      top=true; break;}
+    case 'edit': {const e2=g.entries[i]; if(!e2) return;
+      g.editIdx=i; g.editDraft={bids:e2.bids.slice(),tricks:e2.tricks.slice(),phase:'tricks'}; g.view='round';
+      if(g.finished) state.screen='game'; top=true; break;}
+    case 'cancel-edit': g.editIdx=null; g.editDraft=null; g.view='scores'; top=true; break;
+    case 'end-game':
+      if(!state.ui.confirmEnd){state.ui.confirmEnd=true; break;}
+      g.finished=true; g.editIdx=null; save(); go('end'); return;
+    case 'result': go('end'); return;
+    case 'scores': g.view='scores'; state.screen='game'; top=true; break;
+    case 'rematch': s.firstDealer=(s.firstDealer+1)%s.players.length; startGame(); save(); return;
+    case 'copy': {
+      const text=resultsText();
+      const fallback=()=>toast('Copy blocked here. Long-press the scores to copy.');
+      try{navigator.clipboard.writeText(text).then(()=>toast('Results copied. Paste them in WhatsApp.'),fallback)}catch(err){fallback()}
+      return;}
+  }
+  save(); render(top);
+});
+
+render(true);
+try{localStorage.setItem('kachuful.boot','ok')}catch(e){} // tells the APK loader this version started fine
+</script>
+</body>
+</html>
